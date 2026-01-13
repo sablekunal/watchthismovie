@@ -126,6 +126,8 @@ export default function DashboardInteractions({
                     style={{ x, rotate, opacity }} // Bind motion values
                     drag // Enable dragging
                     dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }} // Snap back on release
+                    dragElastic={{ top: 0, bottom: 0.5, left: 1, right: 1 }} // Prevent dragging up (top: 0), damp down drag
+                    dragDirectionLock={true} // Lock direction once gesture starts
                     onDragEnd={handleDragEnd}
                     initial={{ scale: 0.95, opacity: 0, y: 50 }}
                     animate={{
@@ -136,7 +138,7 @@ export default function DashboardInteractions({
                         opacity: direction ? 0 : 1
                     }}
                     transition={{ duration: 0.25 }}
-                    className="absolute inset-0 bg-gray-900 rounded-3xl overflow-hidden shadow-2xl border border-white/10 cursor-grab active:cursor-grabbing"
+                    className="absolute inset-0 bg-gray-900 rounded-3xl overflow-hidden shadow-2xl border border-white/10 cursor-grab active:cursor-grabbing will-change-transform" // Hardware acceleration
                 >
                     {/* IMAGE */}
                     <div className="relative h-4/5 w-full bg-gray-800">
