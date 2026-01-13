@@ -10,9 +10,14 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: 'WatchThisMovie | AI Powered Discovery',
   description: 'Stop scrolling and start watching. Personalized movie recommendations based on your unique taste DNA.',
+  manifest: '/manifest.json', // Link manifest
   icons: {
     icon: '/favicon.ico',
   },
+};
+
+export const viewport = {
+  themeColor: '#000000', // Matches navigation bar
 };
 
 export default function RootLayout({
@@ -33,7 +38,7 @@ export default function RootLayout({
         <Navigation />
 
         {/* Content wrapper with minimum height to push footer down */}
-        <main className="min-h-screen pt-16 flex flex-col">
+        <main className="min-h-screen flex flex-col">
           {children}
         </main>
 

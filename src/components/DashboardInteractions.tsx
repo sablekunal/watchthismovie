@@ -33,11 +33,8 @@ export default function DashboardInteractions({
     // Logic: Do NOT save. Just show next card.
     // If we skip, we don't get personalized recs, we just move to the next pre-loaded one.
     const handleSkip = () => {
-        setDirection('down');
-        setTimeout(() => {
-            setCurrentIndex((prev) => prev + 1);
-            setDirection(null);
-        }, 250);
+        // Animation only (visual feedback) - no direction needed for gesture anymore
+        setCurrentIndex((prev) => prev + 1);
     };
 
     // --- 2. HANDLE RATING (LIKE/DISLIKE) ---
@@ -83,14 +80,12 @@ export default function DashboardInteractions({
     // --- 3. HANDLE DRAG END ---
     const handleDragEnd = (event: any, info: PanInfo) => {
         const threshold = 100; // Pixels to trigger action
-        const { x: dragX, y: dragY } = info.offset;
+        const { x: dragX } = info.offset;
 
         if (dragX > threshold) {
             handleRate(true); // Swipe Right -> Like
         } else if (dragX < -threshold) {
             handleRate(false); // Swipe Left -> Dislike
-        } else if (dragY > threshold) {
-            handleSkip(); // Swipe Down -> Skip
         }
     };
 
@@ -124,21 +119,20 @@ export default function DashboardInteractions({
                     key={currentMovie.id}
                     // Swipe Animation Logic
                     style={{ x, rotate, opacity }} // Bind motion values
-                    drag // Enable dragging
-                    dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }} // Snap back on release
-                    dragElastic={{ top: 0, bottom: 0.5, left: 1, right: 1 }} // Prevent dragging up (top: 0), damp down drag
-                    dragDirectionLock={true} // Lock direction once gesture starts
+                    drag="x" // Enable dragging ONLY horizontal
+                    dragConstraints={{ left: 0, right: 0 }} // Snap back on release
+                    dragElastic={1} // Standard elasticity
                     onDragEnd={handleDragEnd}
                     initial={{ scale: 0.95, opacity: 0, y: 50 }}
                     animate={{
                         scale: 1,
                         x: direction === 'left' ? -300 : direction === 'right' ? 300 : 0,
-                        y: direction === 'down' ? 300 : 0, // Down animation for skip
+                        y: 0,
                         rotate: direction === 'left' ? -20 : direction === 'right' ? 20 : 0,
                         opacity: direction ? 0 : 1
                     }}
                     transition={{ duration: 0.25 }}
-                    className="absolute inset-0 bg-gray-900 rounded-3xl overflow-hidden shadow-2xl border border-white/10 cursor-grab active:cursor-grabbing will-change-transform" // Hardware acceleration
+                    className="absolute inset-0 bg-gray-900 rounded-3xl overflow-hidden shadow-2xl border border-white/10 cursor-grab active:cursor-grabbing will-change-transform touch-pan-y" // Hardware acceleration + Scroll Fix
                 >
                     {/* IMAGE */}
                     <div className="relative h-4/5 w-full bg-gray-800">

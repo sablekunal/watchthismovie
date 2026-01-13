@@ -141,7 +141,7 @@ export default function Navigation() {
               <>
                 {/* Desktop Links */}
                 <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
-                  <Link href="/dashboard" className={isActive('/dashboard')}>Rate</Link>
+                  <Link href="/rate" className={isActive('/rate')}>Rate</Link>
                   <Link href="/results" className={isActive('/results')}>Recommendations</Link>
                   <Link href="/watchlist" className={isActive('/watchlist')}>Watchlist</Link>
                 </nav>
@@ -255,7 +255,7 @@ export default function Navigation() {
               </div>
 
               <div className="space-y-4">
-                <Link href="/dashboard" onClick={() => setMobileMenuOpen(false)} className="block text-2xl font-bold text-white">Rate Movies</Link>
+                <Link href="/rate" onClick={() => setMobileMenuOpen(false)} className="block text-2xl font-bold text-white">Rate Movies</Link>
                 <Link href="/results" onClick={() => setMobileMenuOpen(false)} className="block text-2xl font-bold text-white">Recommendations</Link>
                 <Link href="/watchlist" onClick={() => setMobileMenuOpen(false)} className="block text-2xl font-bold text-white">My Watchlist</Link>
               </div>
