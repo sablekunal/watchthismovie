@@ -179,7 +179,45 @@ export async function fetchInitialBatch(userId: string) {
     }
   }
 
-  // 3. Return what we found (Slice to 10 to keep batch size consistent)
+  // 3. FALLBACK: If we still have < 5 movies (e.g. User has seen everything popular), fetch Recent Trending
+  if (accumulatedMovies.length < 5) {
+    console.log("⚠️ Initial Batch Low... Attempting Trending Fallback");
+    try {
+      const res = await fetch(`${TMDB_BASE_URL}/trending/movie/week?api_key=${TMDB_KEY}&language=en-US`);
+      if (res.ok) {
+        const data = await res.json();
+        const trending = data.results || [];
+        const freshTrending = trending.filter((m: TMDBMovie) =>
+          !seenIds.has(String(m.id)) && !accumulatedMovies.some(e => e.id === m.id)
+        );
+        accumulatedMovies = [...accumulatedMovies, ...freshTrending];
+      }
+    } catch (e) {
+      console.error("Trending Fallback Failed:", e);
+    }
+  }
+
+  // 4. SECOND FALLBACK: Top Rated Random Page (Last Resort)
+  if (accumulatedMovies.length < 5) {
+    console.log("⚠️ Initial Batch Still Low... Attempting Top Rated Fallback");
+    try {
+      const res = await fetch(`${TMDB_BASE_URL}/movie/top_rated?api_key=${TMDB_KEY}&language=en-US&page=1`);
+      if (res.ok) {
+        const data = await res.json();
+        const topRated = data.results || [];
+        const freshTop = topRated.filter((m: TMDBMovie) =>
+          !seenIds.has(String(m.id)) && !accumulatedMovies.some(e => e.id === m.id)
+        );
+        accumulatedMovies = [...accumulatedMovies, ...freshTop];
+      }
+    } catch (e) {
+      console.error("Top Rated Fallback Failed:", e);
+    }
+  }
+
+  console.log(`✅ Initial Batch Size: ${accumulatedMovies.length}`);
+
+  // 5. Return what we found (Slice to 10 to keep batch size consistent)
   return accumulatedMovies.slice(0, 10);
 }
 
@@ -520,8 +558,8 @@ export async function fetchDashboardRows(userId: string) {
       if (!res.ok) return [];
       const data = await res.json();
       return data.results as TMDBMovie[] || [];
-    } catch (e) {
-      console.error(`Row Fetch Error (${url}):`, e);
+    } catch (e: any) {
+      console.warn(`⚠️ Row Fetch Warning (${url}):`, e.message);
       return [];
     }
   };

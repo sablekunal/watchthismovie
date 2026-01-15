@@ -90,7 +90,7 @@ export default async function PublicProfile({ params }: { params: Promise<{ user
 
     // Fetch specific counts for StatsDisplay
     const { count: likedCount } = await supabase.from('user_interactions').select('*', { count: 'exact', head: true }).eq('user_id', profile.id).eq('liked', true);
-    const { count: dislikedCount } = await supabase.from('user_interactions').select('*', { count: 'exact', head: true }).eq('user_id', profile.id).eq('liked', false);
+    const { count: dislikedCount } = await supabase.from('user_interactions').select('*', { count: 'exact', head: true }).eq('user_id', profile.id).eq('liked', false).eq('has_watched', true);
 
     const topFavorites = profile.top_favorites || [];
 

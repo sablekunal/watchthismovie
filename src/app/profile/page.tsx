@@ -32,7 +32,7 @@ export default async function EditProfilePage() {
 
     const watchedCount = interactions?.filter(i => i.has_watched).length || 0;
     const likedCount = interactions?.filter(i => i.liked === true).length || 0;
-    const dislikedCount = interactions?.filter(i => i.liked === false).length || 0;
+    const dislikedCount = interactions?.filter(i => i.liked === false && i.has_watched === true).length || 0;
 
     // 3. Fetch Full Analytics (Graphs)
     const analyticsData = await getUserAnalytics(user.id, supabase);
