@@ -628,3 +628,33 @@ export async function toggleWatchlist(movie: { id: number, title: string, poster
     return { added: true };
   }
 }
+
+// -----------------------------------------------------------------------------
+// 7. DELETE RATING ACTION (Fix for History Page)
+// -----------------------------------------------------------------------------
+export async function deleteRatingAction(interactionId: number) {
+  const cookieStore = await cookies();
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { cookies: { getAll() { return cookieStore.getAll() } } }
+  );
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: 'Unauthorized' };
+
+  console.log(`🗑️ Deleting interaction ${interactionId} for user ${user.id}`);
+
+  const { error } = await supabase
+    .from('user_interactions')
+    .delete()
+    .eq('id', interactionId)
+    .eq('user_id', user.id); // Security: Ensure user owns the record
+
+  if (error) {
+    console.error("❌ Delete Error:", error);
+    return { error: error.message };
+  }
+
+  return { success: true };
+}

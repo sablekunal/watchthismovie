@@ -1,18 +1,20 @@
 'use client';
 import { Trash2, Loader2 } from 'lucide-react';
-import { createClient } from '@/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 export default function DeleteRatingButton({ id }: { id: number }) {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
-  const supabase = createClient();
 
   const handleDelete = async () => {
     if (!confirm('Remove this rating from your history?')) return;
     setLoading(true);
-    await supabase.from('user_interactions').delete().eq('id', id);
+
+    // Use Server Action instead of Client Supabase
+    const { deleteRatingAction } = await import('@/app/actions'); // Dynamic import to avoid build loops if any
+    await deleteRatingAction(id);
+
     router.refresh();
     setLoading(false);
   };
