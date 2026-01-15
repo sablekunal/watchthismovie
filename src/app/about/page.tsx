@@ -61,7 +61,7 @@ export default function AboutUs() {
                         {/* Initial Circle */}
                         <div className="shrink-0">
                             <div className="w-32 h-32 rounded-full bg-gradient-to-br from-blue-600 to-indigo-700 text-white flex items-center justify-center text-4xl font-bold shadow-[0_0_30px_rgba(37,99,235,0.3)] border-4 border-black/50">
-                                <img src="https://gratisography.com/wp-content/uploads/2024/11/gratisography-augmented-reality-1170x780.jpg" alt="" sizes='(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw' className='rounded-full' />
+                                <img src="https://avatars.githubusercontent.com/u/186178187" alt="" sizes='(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw' className='rounded-full' />
                             </div>
                         </div>
 

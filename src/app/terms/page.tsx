@@ -26,9 +26,8 @@ export default function TermsOfService() {
                 </section>
 
                 <section className="mb-6">
-                    <h2 className="text-xl font-semibold mb-3 text-white">3. Disclaimer (Student Project)</h2>
+                    <h2 className="text-xl font-semibold mb-3 text-white">3. Disclaimer </h2>
                     <p className="text-gray-300">
-                        This website is created as a <strong>portfolio/educational project</strong>.
                         The service is provided on an "as is" and "as available" basis. We do not guarantee that the service will be uninterrupted or error-free.
                     </p>
                 </section>
