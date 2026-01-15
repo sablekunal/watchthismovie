@@ -30,13 +30,11 @@ export default function DashboardInteractions({
     const opacity = useTransform(x, [-300, -150, 0, 150, 300], [0, 1, 1, 1, 0]);
 
     const [ratedCount, setRatedCount] = useState(0);
-    const DAILY_LIMIT = 50;
 
     const currentMovie = queue[currentIndex]; // <--- RESTORED
 
     // --- 1. HANDLE "HAVEN'T SEEN" (SKIP) ---
     const handleSkip = async () => {
-        if (ratedCount >= DAILY_LIMIT) return; // Prevent action if limit reached
         setDirection('up');
 
         setTimeout(() => {
@@ -59,7 +57,6 @@ export default function DashboardInteractions({
 
     // --- 2. HANDLE NEXT (Instant Update from Slider) ---
     const handleNext = () => {
-        if (ratedCount >= DAILY_LIMIT) return;
         // 1. Animate Out
         setDirection('right'); // Simplified: We just fly it right for success feel
 
@@ -74,7 +71,6 @@ export default function DashboardInteractions({
 
     // --- 3. HANDLE DRAG END (Still keep swipe for power users) ---
     const handleDragEnd = async (event: any, info: PanInfo) => {
-        if (ratedCount >= DAILY_LIMIT) return;
         const threshold = 100; // Pixels to trigger action
         const { x: dragX } = info.offset;
 
@@ -92,20 +88,6 @@ export default function DashboardInteractions({
             await submitRatingAndGetNext(userId, { id: currentMovie.id, title: currentMovie.title, poster_path: currentMovie.poster_path || '' }, liked);
         }
     };
-
-    // --- LIMIT REACHED STATE ---
-    if (ratedCount >= DAILY_LIMIT) {
-        return (
-            <div className="flex flex-col items-center justify-center h-[500px] text-center p-6 bg-gray-900/50 rounded-3xl border border-white/10 animate-in zoom-in duration-300">
-                <Check className="w-16 h-16 text-blue-500 mb-4" />
-                <h2 className="text-2xl font-bold mb-2">Daily Limit Reached!</h2>
-                <p className="text-gray-400 max-w-xs">You've rated 50 movies today. Amazing! Come back tomorrow for more personalized picks.</p>
-                <button onClick={() => window.location.href = '/results'} className="mt-6 px-8 py-3 bg-white text-black rounded-full font-bold shadow-lg hover:scale-105 transition-transform">
-                    See Results
-                </button>
-            </div>
-        );
-    }
 
     // --- EMPTY STATE ---
     if (!currentMovie) {

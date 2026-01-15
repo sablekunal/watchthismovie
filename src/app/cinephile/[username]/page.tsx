@@ -9,6 +9,7 @@ import StatsDisplay from '@/components/profile/StatsDisplay';
 import { getUserTasteProfile } from '@/lib/taste';
 import RecentActivity from '@/components/profile/RecentActivity';
 import ReportButton from '@/components/profile/ReportButton';
+import ShareButton from '@/components/profile/ShareButton';
 
 // DYNAMIC METADATA (For Viral Sharing)
 export async function generateMetadata({ params }: { params: Promise<{ username: string }> }) {
@@ -130,7 +131,10 @@ export default async function PublicProfile({ params }: { params: Promise<{ user
                             ) : (
                                 <h1 className="text-4xl md:text-6xl font-bold mb-2">{profile.username}</h1>
                             )}
-                            <p className="text-xl text-gray-400">{profile.bio || "No bio yet."}</p>
+                            <div className="flex items-center gap-3">
+                                <p className="text-xl text-gray-400">{profile.bio || "No bio yet."}</p>
+                                <ShareButton />
+                            </div>
                         </div>
 
                         {/* STATS (Advanced & Private) - No Emojis */}

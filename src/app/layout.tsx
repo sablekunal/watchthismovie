@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   description: 'Stop scrolling and start watching. Personalized movie recommendations based on your unique taste DNA.',
   manifest: '/manifest.json', // Link manifest
   icons: {
-    icon: '/favicon.ico',
+    icon: '/wtm.svg',
   },
   verification: {
     google: 'TQpT07Te-H5Nugym8M4WCC3MsgEGFUzjv_3NQuCrjjI',

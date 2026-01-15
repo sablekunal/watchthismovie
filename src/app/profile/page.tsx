@@ -4,6 +4,7 @@ import ProfileForm from '@/components/profile/ProfileForm';
 import StatsDisplay from '@/components/profile/StatsDisplay';
 import { getUserAnalytics } from '@/lib/analytics';
 import CinephileAnalytics from '@/components/profile/CinephileAnalytics';
+import ShareButton from '@/components/profile/ShareButton';
 
 export default async function EditProfilePage() {
     const cookieStore = await cookies();
@@ -46,12 +47,15 @@ export default async function EditProfilePage() {
             <div className="max-w-2xl mx-auto relative z-10">
                 <div className="flex justify-between items-center mb-2">
                     <h1 className="text-3xl font-bold">Edit Profile</h1>
-                    <a
-                        href={`/cinephile/${profile.username}`}
-                        className="px-4 py-2 bg-white/10 text-white text-sm font-bold rounded-full hover:bg-white/20 transition-colors border border-white/5 flex items-center gap-2"
-                    >
-                        Show Public View &rarr;
-                    </a>
+                    <div className="flex gap-2">
+                        <ShareButton url={`https://watchthismovieonline.vercel.app/cinephile/${profile.username}`} title="Share" />
+                        <a
+                            href={`/cinephile/${profile.username}`}
+                            className="px-4 py-2 bg-white/10 text-white text-sm font-bold rounded-full hover:bg-white/20 transition-colors border border-white/5 flex items-center gap-2"
+                        >
+                            Show Public View &rarr;
+                        </a>
+                    </div>
                 </div>
                 <p className="text-gray-400 mb-8">Manage your public persona, social links, and privacy settings.</p>
 

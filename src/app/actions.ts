@@ -295,6 +295,9 @@ export async function getRecommendations(userId: string) {
 
 import { unstable_noStore as noStore } from 'next/cache';
 
+// -----------------------------------------------------------------------------
+// 3. PERSONALIZED FEED (The "Tinder" Stack)
+// -----------------------------------------------------------------------------
 export async function fetchPersonalizedFeed(userId: string) {
   noStore(); // <--- 1. THIS KILLS THE CACHE (Forces fresh fetch)
   checkKey();
@@ -314,8 +317,6 @@ export async function fetchPersonalizedFeed(userId: string) {
   // Convert everything to String to be safe
   const seenIds = new Set(seen?.map(x => String(x.movie_id)) || []);
 
-  console.log("🚫 Seen IDs:", Array.from(seenIds)); // Debug: See what is blocked
-
   // 2. Fetch User's Last Liked Movie
   const { data: lastLiked } = await supabase
     .from('user_interactions')
@@ -328,21 +329,62 @@ export async function fetchPersonalizedFeed(userId: string) {
 
   let movies: TMDBMovie[] = [];
 
-  if (lastLiked) {
-    const res = await fetch(`${TMDB_BASE_URL}/movie/${lastLiked.movie_id}/recommendations?api_key=${TMDB_KEY}&language=en-US`);
-    const data = await res.json();
-    movies = data.results || [];
-  } else {
-    // Fallback to Trending
-    const res = await fetch(`${TMDB_BASE_URL}/trending/movie/week?api_key=${TMDB_KEY}&language=en-US`);
-    const data = await res.json();
-    movies = data.results || [];
+  // 3. Try Fetching Recommendations
+  try {
+    if (lastLiked) {
+      const res = await fetch(`${TMDB_BASE_URL}/movie/${lastLiked.movie_id}/recommendations?api_key=${TMDB_KEY}&language=en-US`);
+      if (res.ok) {
+        const data = await res.json();
+        movies = data.results || [];
+      }
+    }
+  } catch (error) {
+    console.error("Error fetching recommendations:", error);
   }
 
-  // 3. STRICT FILTER
-  const freshMovies = movies.filter(m => !seenIds.has(String(m.id)));
+  // Filter what we have so far
+  let freshMovies = movies.filter(m => !seenIds.has(String(m.id)));
 
-  console.log("✅ First Fresh Movie:", freshMovies[0]?.title); // Debug: Check who won
+  // 4. FALLBACK: If queue is low/empty, fetch Trending (or Popular)
+  // This ensures the user NEVER sees "Queue Empty" unless they've seen everything on TMDB (impossible)
+  if (freshMovies.length < 5) {
+    try {
+      console.log("⚠️ Feed low, fetching trending fallback...");
+      const res = await fetch(`${TMDB_BASE_URL}/trending/movie/week?api_key=${TMDB_KEY}&language=en-US`);
+      if (res.ok) {
+        const data = await res.json();
+        const trending = data.results || [];
+
+        // Filter and Append (Deduplicating existing freshMovies)
+        const freshTrending = trending.filter((m: TMDBMovie) =>
+          !seenIds.has(String(m.id)) && !freshMovies.some(f => f.id === m.id)
+        );
+        freshMovies = [...freshMovies, ...freshTrending];
+      }
+    } catch (error) {
+      console.error("Error fetching trending fallback:", error);
+    }
+  }
+
+  // 5. SECOND FALLBACK: Top Rated (If trending is also exhausted/blocked)
+  if (freshMovies.length < 5) {
+    try {
+      console.log("⚠️ Feed still low, fetching top rated fallback...");
+      const res = await fetch(`${TMDB_BASE_URL}/movie/top_rated?api_key=${TMDB_KEY}&language=en-US&page=1`);
+      if (res.ok) {
+        const data = await res.json();
+        const topRated = data.results || [];
+        const freshTop = topRated.filter((m: TMDBMovie) =>
+          !seenIds.has(String(m.id)) && !freshMovies.some(f => f.id === m.id)
+        );
+        freshMovies = [...freshMovies, ...freshTop];
+      }
+    } catch (error) {
+      console.error("Error fetching top rated fallback:", error);
+    }
+  }
+
+  console.log("✅ Final Feed Size:", freshMovies.length);
 
   return freshMovies;
 }
