@@ -130,6 +130,25 @@ export async function fetchInitialBatch(userId: string) {
     { cookies: { getAll() { return cookieStore.getAll() } } }
   );
 
+  // Helper: Robust Fetch with Retries to prevent "fetch failed"
+  const robustFetch = async (url: string, retries = 3) => {
+    for (let i = 0; i < retries; i++) {
+      try {
+        const res = await fetch(url, {
+          headers: { 'Accept': 'application/json', 'User-Agent': 'WatchThisMovie/1.0' },
+          next: { revalidate: 3600 }
+        });
+        if (!res.ok) throw new Error(`Status ${res.status}`);
+        return await res.json();
+      } catch (err: any) {
+        console.warn(`⚠️ Attempt ${i + 1} failed for ${url.split('?')[0]}: ${err.message}`);
+        if (i === retries - 1) return null;
+        await new Promise(r => setTimeout(r, 1000)); // Wait 1s
+      }
+    }
+    return null;
+  };
+
   // 1. Get ALL IDs (seen/skipped)
   const { data: seen } = await supabase
     .from('user_interactions')
@@ -141,83 +160,53 @@ export async function fetchInitialBatch(userId: string) {
   const today = new Date().toISOString().split('T')[0];
   let accumulatedMovies: TMDBMovie[] = [];
   let page = 1;
-  const MAX_PAGES = 5; // Search up to top 100 movies (20 per page * 5)
+  const MAX_PAGES = 5;
 
-  // 2. ITERATIVE LOOP: Keep fetching until we have enough new movies
+  // 2. ITERATIVE LOOP
   while (accumulatedMovies.length < 10 && page <= MAX_PAGES) {
-    try {
-      console.log(`🔄 Fetching Top Voted Page ${page}...`);
+    console.log(`🔄 Fetching Top Voted Page ${page}...`);
+    const data = await robustFetch(
+      `${TMDB_BASE_URL}/discover/movie?api_key=${TMDB_KEY}&language=en-US&sort_by=vote_count.desc&vote_count.gte=300&include_adult=false&page=${page}`
+    );
 
-      const res = await fetch(
-        `${TMDB_BASE_URL}/discover/movie?api_key=${TMDB_KEY}&language=en-US&sort_by=vote_count.desc&vote_count.gte=300&include_adult=false&page=${page}`,
-        { next: { revalidate: 3600 } }
-      );
-
-      if (!res.ok) throw new Error(`Fetch failed: ${res.status}`);
-
-      const data = await res.json();
+    if (data && data.results) {
       const results = (data.results as TMDBMovie[]) || [];
-
-      // Filter this page
       const validMovies = results.filter(m => {
-        // A. Seen Check
         if (seenIds.has(String(m.id))) return false;
-        // B. Future Date Check
         if (!m.release_date || m.release_date > today) return false;
-        // C. Duplicate Check (Already in our accumulator)
         if (accumulatedMovies.find(existing => existing.id === m.id)) return false;
-
         return true;
       });
-
       accumulatedMovies = [...accumulatedMovies, ...validMovies];
-      page++;
-
-    } catch (error) {
-      console.error(`⚠️ Iterative Fetch Failed (Page ${page}):`, error);
-      break; // Stop loop on error to prevent infinite spin
     }
+    page++;
   }
 
-  // 3. FALLBACK: If we still have < 5 movies (e.g. User has seen everything popular), fetch Recent Trending
+  // 3. FALLBACK: Trending
   if (accumulatedMovies.length < 5) {
     console.log("⚠️ Initial Batch Low... Attempting Trending Fallback");
-    try {
-      const res = await fetch(`${TMDB_BASE_URL}/trending/movie/week?api_key=${TMDB_KEY}&language=en-US`);
-      if (res.ok) {
-        const data = await res.json();
-        const trending = data.results || [];
-        const freshTrending = trending.filter((m: TMDBMovie) =>
-          !seenIds.has(String(m.id)) && !accumulatedMovies.some(e => e.id === m.id)
-        );
-        accumulatedMovies = [...accumulatedMovies, ...freshTrending];
-      }
-    } catch (e) {
-      console.error("Trending Fallback Failed:", e);
+    const data = await robustFetch(`${TMDB_BASE_URL}/trending/movie/week?api_key=${TMDB_KEY}&language=en-US`);
+    if (data && data.results) {
+      const fresh = (data.results as TMDBMovie[]).filter(m =>
+        !seenIds.has(String(m.id)) && !accumulatedMovies.some(e => e.id === m.id)
+      );
+      accumulatedMovies = [...accumulatedMovies, ...fresh];
     }
   }
 
-  // 4. SECOND FALLBACK: Top Rated Random Page (Last Resort)
+  // 4. SECOND FALLBACK: Top Rated
   if (accumulatedMovies.length < 5) {
     console.log("⚠️ Initial Batch Still Low... Attempting Top Rated Fallback");
-    try {
-      const res = await fetch(`${TMDB_BASE_URL}/movie/top_rated?api_key=${TMDB_KEY}&language=en-US&page=1`);
-      if (res.ok) {
-        const data = await res.json();
-        const topRated = data.results || [];
-        const freshTop = topRated.filter((m: TMDBMovie) =>
-          !seenIds.has(String(m.id)) && !accumulatedMovies.some(e => e.id === m.id)
-        );
-        accumulatedMovies = [...accumulatedMovies, ...freshTop];
-      }
-    } catch (e) {
-      console.error("Top Rated Fallback Failed:", e);
+    const data = await robustFetch(`${TMDB_BASE_URL}/movie/top_rated?api_key=${TMDB_KEY}&language=en-US&page=1`);
+    if (data && data.results) {
+      const fresh = (data.results as TMDBMovie[]).filter(m =>
+        !seenIds.has(String(m.id)) && !accumulatedMovies.some(e => e.id === m.id)
+      );
+      accumulatedMovies = [...accumulatedMovies, ...fresh];
     }
   }
 
   console.log(`✅ Initial Batch Size: ${accumulatedMovies.length}`);
-
-  // 5. Return what we found (Slice to 10 to keep batch size consistent)
   return accumulatedMovies.slice(0, 10);
 }
 
@@ -269,9 +258,14 @@ export async function submitRatingAndGetNext(
     return [];
   }
 
-  // C. FILTER is handled by client or next batch fetch usually, 
-  // but returning raw here for speed. Client duplicates check recommended.
-  return nextMovies.slice(0, 3); // Return top 3 suggestions
+  // C. FILTER SEEN MOVIES (Fix "Wrong Information")
+  const { data: seen } = await supabase.from('user_interactions').select('movie_id').eq('user_id', userId);
+  const seenIds = new Set(seen?.map(x => x.movie_id) || []);
+  seenIds.add(movie.id); // Ensure the one we just rated is excluded
+
+  const filteredMovies = nextMovies.filter(m => !seenIds.has(m.id));
+
+  return filteredMovies.slice(0, 3); // Return top 3 fresh suggestions
 }
 
 // -----------------------------------------------------------------------------

@@ -20,7 +20,11 @@ export const metadata: Metadata = {
 };
 
 export const viewport = {
-  themeColor: '#000000', // Matches navigation bar
+  themeColor: '#000000',
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false, // Prevents "Crash on Zoom" and gives native app feel
 };
 
 export default function RootLayout({

@@ -132,7 +132,8 @@ export default function DashboardInteractions({
                                 alt={currentMovie.title}
                                 fill
                                 className="object-cover pointer-events-none"
-                                priority
+                                priority={true} // <--- FIX: Preload Main Image (No Lag)
+                                sizes="(max-width: 768px) 100vw, 500px"
                             />
                         ) : (
                             <div className="flex items-center justify-center h-full text-gray-500">No Image</div>
