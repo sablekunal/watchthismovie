@@ -30,8 +30,8 @@ export default function Footer() {
 
         {/* Links Column 1 */}
         <div>
-          <h4 className="font-bold text-white mb-4">Product</h4>
-          <ul className="space-y-2 text-sm text-gray-500">
+          <h3 className="font-bold text-white mb-4">Product</h3>
+          <ul className="space-y-2 text-sm text-gray-400">
             <li><Link href="/rate" className="hover:text-blue-400">Rate Movies</Link></li>
             <li><Link href="/results" className="hover:text-blue-400">Recommendations</Link></li>
           </ul>
@@ -39,8 +39,8 @@ export default function Footer() {
 
         {/* Links Column 2 */}
         <div>
-          <h4 className="font-bold text-white mb-4">Company</h4>
-          <ul className="space-y-2 text-sm text-gray-500">
+          <h3 className="font-bold text-white mb-4">Company</h3>
+          <ul className="space-y-2 text-sm text-gray-400">
             <li><Link href="/about" className="hover:text-blue-400">About Us</Link></li>
             <li><Link href="/privacy" className="hover:text-blue-400">Privacy Policy</Link></li>
             <li><Link href="/terms" className="hover:text-blue-400">Terms of Service</Link></li>
@@ -49,7 +49,7 @@ export default function Footer() {
 
         {/* Socials */}
         <div>
-          <h4 className="font-bold text-white mb-4">Follow Us</h4>
+          <h3 className="font-bold text-white mb-4">Follow Us</h3>
           <div className="flex gap-4">
             <a href="#" aria-label="Twitter" className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-gray-400 hover:bg-blue-600 hover:text-white transition-all">
               <Twitter className="w-4 h-4" />
@@ -64,7 +64,7 @@ export default function Footer() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 border-t border-white/5 pt-8 text-center text-xs text-gray-600">
+      <div className="max-w-7xl mx-auto px-6 border-t border-white/5 pt-8 text-center text-xs text-gray-400">
         © 2026 WatchThisMovie. All rights reserved. Data provided by TMDB.
       </div>
     </footer>

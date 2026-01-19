@@ -37,6 +37,9 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark scroll-smooth" data-scroll-behavior="smooth">
       <body className={`${inter.className} bg-black text-white antialiased`}>
+        {/* Preconnect for Noise Texture */}
+        <link rel="preconnect" href="https://grainy-gradients.vercel.app" />
+
         {/* Google Tag Manager (noscript) */}
         <noscript>
           <iframe

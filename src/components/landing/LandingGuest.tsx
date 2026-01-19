@@ -160,7 +160,7 @@ export default function LandingGuest() {
          ========================================= */}
             <section className="py-10 border-y border-white/5 bg-white/[0.02]">
                 <div className="max-w-7xl mx-auto px-6 text-center">
-                    <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-6">
+                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-6">
                         Aggregating data from
                     </p>
                     <div className="flex flex-wrap justify-center items-center gap-8 md:gap-16 opacity-40 grayscale hover:grayscale-0 transition-all duration-500">
