@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
 import { Loader2, Save, Search, X, Star, Plus, Trash2, Link as LinkIcon, User, Globe, Instagram, Twitter, Camera, Clock } from 'lucide-react';
@@ -58,6 +58,29 @@ export default function ProfileForm({ initialProfile, userId }: ProfileFormProps
     const [recentQuery, setRecentQuery] = useState('');
     const [recentResults, setRecentResults] = useState<any[]>([]);
     const [searchingRecent, setSearchingRecent] = useState(false);
+
+    // SYNC STATE ON REFRESH (Fix: UI wasn't updating after save)
+    useEffect(() => {
+        if (initialProfile) {
+            setFormData({
+                username: initialProfile.username || '',
+                full_name: initialProfile.full_name || '',
+                bio: initialProfile.bio || '',
+                avatar_url: initialProfile.avatar_url || '',
+                is_public: initialProfile.is_public ?? true,
+                show_stats_publicly: initialProfile.show_stats_publicly ?? true,
+                public_note: initialProfile.public_note || '',
+            });
+
+            const newSocials = initialProfile.social_links
+                ? Object.entries(initialProfile.social_links).map(([platform, value]) => ({ platform, value: value as string }))
+                : [];
+            setSocials(newSocials);
+
+            setFavorites(initialProfile.top_favorites || []);
+            setRecentWatches(initialProfile.recent_watches || []); // SYNC RECENT WATCHES
+        }
+    }, [initialProfile]);
 
     // --- HANDLERS ---
 
@@ -251,15 +274,20 @@ export default function ProfileForm({ initialProfile, userId }: ProfileFormProps
         };
 
         try {
-            const { error } = await supabase
+            const { data, error } = await supabase
                 .from('profiles')
                 .update(updates)
-                .eq('id', userId);
+                .eq('id', userId)
+                .select(); // Verify update happened
 
             if (error) {
                 if (error.code === '23505') throw new Error('Username already taken.');
                 throw error;
             };
+
+            if (!data || data.length === 0) {
+                throw new Error("Update failed. Please refresh and try again.");
+            }
 
             setMessage({ type: 'success', text: 'Profile updated successfully!' });
             router.refresh();
