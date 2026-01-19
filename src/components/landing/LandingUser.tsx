@@ -45,7 +45,7 @@ export default function LandingUser({ user, bestMatch }: { user: User, bestMatch
           <div className="space-y-4 md:space-y-6 animate-in slide-in-from-bottom-8 duration-700">
 
             <h1 className="text-4xl md:text-7xl font-bold leading-tight drop-shadow-2xl">
-              <span className="block text-lg md:text-2xl font-normal text-gray-300 mb-2">Welcome back, {name}</span>
+              <span className="block text-lg md:text-2xl font-normal text-gray-200 mb-2">Welcome back, {name}</span>
               {bestMatch.title}
             </h1>
 

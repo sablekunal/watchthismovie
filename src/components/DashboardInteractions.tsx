@@ -95,7 +95,7 @@ export default function DashboardInteractions({
             <div className="flex flex-col items-center justify-center h-[500px] text-center p-6 bg-gray-900/50 rounded-3xl border border-white/10">
                 <Check className="w-16 h-16 text-green-500 mb-4" />
                 <h2 className="text-2xl font-bold mb-2">Queue Empty!</h2>
-                <p className="text-gray-400">Refresh to start a new session.</p>
+                <p className="text-gray-300">Refresh to start a new session.</p>
                 <button onClick={() => window.location.reload()} className="mt-4 px-6 py-2 bg-white text-black rounded-full font-bold">
                     Refresh
                 </button>
@@ -181,7 +181,7 @@ export default function DashboardInteractions({
 
                         {/* Keep "Not Seen" as a small text link below */}
                         <div className="text-center mt-4">
-                            <button onClick={handleSkip} className="text-xs text-gray-500 uppercase tracking-widest hover:text-white transition-colors">
+                            <button onClick={handleSkip} className="text-xs text-gray-400 uppercase tracking-widest hover:text-white transition-colors">
                                 Haven't Seen This
                             </button>
                         </div>
