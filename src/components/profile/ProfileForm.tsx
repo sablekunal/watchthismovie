@@ -7,6 +7,7 @@ import { Loader2, Save, Search, X, Star, Plus, Trash2, Link as LinkIcon, User, G
 import { searchMovies } from '@/app/actions';
 import Image from 'next/image';
 import { IKContext, IKUpload } from 'imagekitio-react';
+import FilmIndustrySelector from './FilmIndustrySelector';
 
 interface ProfileFormProps {
     initialProfile: any;
@@ -44,6 +45,9 @@ export default function ProfileForm({ initialProfile, userId }: ProfileFormProps
         public_note: initialProfile?.public_note || '',
     });
 
+    // Industries State (New)
+    const [industries, setIndustries] = useState<string[]>(initialProfile?.taste_dna?.industries || ['US']);
+
     const [socials, setSocials] = useState<{ platform: string, value: string }[]>(initialSocials);
     const [showSocialDropdown, setShowSocialDropdown] = useState(false);
 
@@ -78,7 +82,8 @@ export default function ProfileForm({ initialProfile, userId }: ProfileFormProps
             setSocials(newSocials);
 
             setFavorites(initialProfile.top_favorites || []);
-            setRecentWatches(initialProfile.recent_watches || []); // SYNC RECENT WATCHES
+            setRecentWatches(initialProfile.recent_watches || []);
+            setIndustries(initialProfile.taste_dna?.industries || ['US']); // Sync industries
         }
     }, [initialProfile]);
 
@@ -269,9 +274,15 @@ export default function ProfileForm({ initialProfile, userId }: ProfileFormProps
             public_note: formData.public_note,
             social_links: socialLinksObj,
             top_favorites: favorites,
-            recent_watches: recentWatches, // SAVE RECENT
+            recent_watches: recentWatches,
+            taste_dna: {
+                ...(initialProfile?.taste_dna || {}),
+                industries: industries // SAVE INDUSTRIES
+            },
             updated_at: new Date().toISOString(),
         };
+
+        console.log("Saving Profile Updates:", updates); // DEBUG LOG
 
         try {
             const { data, error } = await supabase
@@ -384,6 +395,7 @@ export default function ProfileForm({ initialProfile, userId }: ProfileFormProps
                                             value={formData.username}
                                             onChange={handleChange}
                                             maxLength={30}
+                                            suppressHydrationWarning
                                             className="flex-1 min-w-0 block w-full px-3 py-2 bg-transparent text-white focus:outline-none sm:text-sm"
                                             placeholder="ghostshanky"
                                         />
@@ -401,6 +413,7 @@ export default function ProfileForm({ initialProfile, userId }: ProfileFormProps
                                         value={formData.full_name}
                                         onChange={handleChange}
                                         maxLength={30}
+                                        suppressHydrationWarning
                                         className="block w-full px-3 py-2 bg-black/50 border border-white/10 rounded-md text-white focus:outline-none sm:text-sm"
                                         placeholder="Kunal..."
                                     />
@@ -454,6 +467,14 @@ export default function ProfileForm({ initialProfile, userId }: ProfileFormProps
                     </div>
                 </div>
 
+                {/* --- SECTION 1.5: FILM INDUSTRIES (New) --- */}
+                <div className="pt-4 border-t border-white/5">
+                    <FilmIndustrySelector
+                        selectedCodes={industries}
+                        onChange={setIndustries}
+                    />
+                </div>
+
                 {/* --- SECTION 2: HALL OF FAME (TOP 3) --- */}
                 <div className="space-y-4 pt-4 border-t border-white/5">
                     <h3 className="text-xl font-bold flex items-center gap-2">
@@ -495,6 +516,7 @@ export default function ProfileForm({ initialProfile, userId }: ProfileFormProps
                                 value={query}
                                 onChange={handleSearch}
                                 placeholder="Search for a movie..."
+                                suppressHydrationWarning
                                 className="w-full bg-black/50 border border-white/10 rounded-xl py-2 pl-10 pr-4 text-sm text-white focus:outline-none focus:border-blue-500"
                             />
 
@@ -539,6 +561,7 @@ export default function ProfileForm({ initialProfile, userId }: ProfileFormProps
                                 value={recentQuery}
                                 onChange={handleRecentSearch}
                                 placeholder="Search to add recent watch..."
+                                suppressHydrationWarning
                                 className="bg-transparent border-none focus:outline-none text-white text-sm w-full placeholder-gray-500"
                                 disabled={recentWatches.length >= 5}
                             />
@@ -615,6 +638,7 @@ export default function ProfileForm({ initialProfile, userId }: ProfileFormProps
                             <button
                                 type="button"
                                 onClick={() => setShowSocialDropdown(!showSocialDropdown)}
+                                suppressHydrationWarning
                                 className="flex items-center gap-1 text-xs font-bold text-blue-400 hover:text-blue-300 transition-colors"
                             >
                                 <Plus className="w-3 h-3" /> Add Link
@@ -651,6 +675,7 @@ export default function ProfileForm({ initialProfile, userId }: ProfileFormProps
                                         type="text"
                                         value={link.value}
                                         onChange={(e) => updateSocial(link.platform, e.target.value)}
+                                        suppressHydrationWarning
                                         className="flex-1 px-3 py-2 bg-black/50 border border-white/10 rounded-md text-white text-sm focus:outline-none"
                                         placeholder={link.platform === 'website' ? 'https://...' : 'username'}
                                     />
@@ -682,6 +707,7 @@ export default function ProfileForm({ initialProfile, userId }: ProfileFormProps
                         <button
                             type="button"
                             onClick={() => handleToggle('is_public')}
+                            suppressHydrationWarning
                             className={`${formData.is_public ? 'bg-blue-600' : 'bg-gray-700'} relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none`}
                         >
                             <span className={`${formData.is_public ? 'translate-x-5' : 'translate-x-0'} pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out`} />
@@ -697,6 +723,7 @@ export default function ProfileForm({ initialProfile, userId }: ProfileFormProps
                         <button
                             type="button"
                             onClick={() => handleToggle('show_stats_publicly')}
+                            suppressHydrationWarning
                             className={`${formData.show_stats_publicly ? 'bg-green-600' : 'bg-gray-700'} relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none`}
                         >
                             <span className={`${formData.show_stats_publicly ? 'translate-x-5' : 'translate-x-0'} pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out`} />
@@ -709,6 +736,7 @@ export default function ProfileForm({ initialProfile, userId }: ProfileFormProps
                     <button
                         type="submit"
                         disabled={loading}
+                        suppressHydrationWarning
                         className="w-full flex justify-center items-center gap-2 py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 transition-all font-bold"
                     >
                         {loading ? <Loader2 className="animate-spin w-4 h-4" /> : <Save className="w-4 h-4" />}

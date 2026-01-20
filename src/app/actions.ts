@@ -2,6 +2,7 @@
 
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import { getCountryCodesFromIndustries } from '@/lib/industries';
 import { getCountryCode } from '@/lib/getCountry';
 
 // 1. SANITIZE KEYS (Fixes hidden spaces)
@@ -9,7 +10,7 @@ const TMDB_KEY = process.env.NEXT_PUBLIC_TMDB_KEY?.trim();
 const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
 
 // --- INTERFACES (Kept strictly typed) ---
-interface TMDBMovie {
+export interface TMDBMovie {
   id: number;
   title: string;
   poster_path: string | null;
@@ -388,14 +389,30 @@ export async function fetchPersonalizedFeed(userId: string) {
     { cookies: { getAll() { return cookieStore.getAll() } } }
   );
 
-  // 1. Get ALL IDs (Watched OR Skipped) - Strict String Conversion
-  const { data: seen } = await supabase
-    .from('user_interactions')
-    .select('movie_id')
-    .eq('user_id', userId);
+  // 1. Get ALL IDs & Preferences
+  const [seenRes, profileRes] = await Promise.all([
+    supabase.from('user_interactions').select('movie_id').eq('user_id', userId),
+    supabase.from('profiles').select('taste_dna').eq('id', userId).single() // Fetch preferences
+  ]);
 
   // Convert everything to String to be safe
-  const seenIds = new Set(seen?.map(x => String(x.movie_id)) || []);
+  const seenIds = new Set(seenRes.data?.map(x => String(x.movie_id)) || []);
+
+  // INDUSTRY PREFERENCE LOGIC
+  const industries = profileRes.data?.taste_dna?.industries || [];
+  let industryParam = '';
+
+  if (industries.length > 0) {
+    // If user has preferences, join them with OR pipe logic
+    // e.g., "US|IN|KR"
+    industryParam = `&with_origin_country=${industries.join('|')}`;
+  } else {
+    // DEFAULT: Detect Region + US (Smart Default)
+    const countryCode = await getCountryCode() || 'US';
+    if (countryCode !== 'US') {
+      industryParam = `&with_origin_country=${countryCode}|US`;
+    }
+  }
 
   // 2. Fetch User's Last Liked Movie
   const { data: lastLiked } = await supabase
@@ -412,6 +429,10 @@ export async function fetchPersonalizedFeed(userId: string) {
   // 3. Try Fetching Recommendations
   try {
     if (lastLiked) {
+      // Note: /recommendations endpoint doesn't support with_origin_country filtering directly in some versions of TMDB, 
+      // but let's try appending or fallback to discover if needed. 
+      // Actually, standard recommendations logic is usually better left pure.
+      // However, for the FALLBACKS (Trending/TopRated) we DEFINITELY want to apply it.
       const res = await fetch(`${TMDB_BASE_URL}/movie/${lastLiked.movie_id}/recommendations?api_key=${TMDB_KEY}&language=en-US`);
       if (res.ok) {
         const data = await res.json();
@@ -425,17 +446,21 @@ export async function fetchPersonalizedFeed(userId: string) {
   // Filter what we have so far
   let freshMovies = movies.filter(m => !seenIds.has(String(m.id)));
 
-  // 4. FALLBACK: If queue is low/empty, fetch Trending (or Popular)
-  // This ensures the user NEVER sees "Queue Empty" unless they've seen everything on TMDB (impossible)
+  // 4. FALLBACK: If queue is low, Fetch Trending/Popular WITH REGION FILTER
   if (freshMovies.length < 5) {
     try {
-      console.log("⚠️ Feed low, fetching trending fallback...");
-      const res = await fetch(`${TMDB_BASE_URL}/trending/movie/week?api_key=${TMDB_KEY}&language=en-US`);
+      console.log(`⚠️ Feed low, fetching trending fallback (Industries: ${industryParam || 'Global'})...`);
+
+      // We switch to DISCOVER to use filters effectively
+      const res = await fetch(
+        `${TMDB_BASE_URL}/discover/movie?api_key=${TMDB_KEY}&language=en-US&sort_by=popularity.desc&page=1${industryParam}`
+      );
+
       if (res.ok) {
         const data = await res.json();
         const trending = data.results || [];
 
-        // Filter and Append (Deduplicating existing freshMovies)
+        // Filter and Append
         const freshTrending = trending.filter((m: TMDBMovie) =>
           !seenIds.has(String(m.id)) && !freshMovies.some(f => f.id === m.id)
         );
@@ -446,11 +471,14 @@ export async function fetchPersonalizedFeed(userId: string) {
     }
   }
 
-  // 5. SECOND FALLBACK: Top Rated (If trending is also exhausted/blocked)
+  // 5. SECOND FALLBACK: Top Rated
   if (freshMovies.length < 5) {
     try {
       console.log("⚠️ Feed still low, fetching top rated fallback...");
-      const res = await fetch(`${TMDB_BASE_URL}/movie/top_rated?api_key=${TMDB_KEY}&language=en-US&page=1`);
+      // Also apply filter here
+      const res = await fetch(
+        `${TMDB_BASE_URL}/discover/movie?api_key=${TMDB_KEY}&language=en-US&sort_by=vote_average.desc&vote_count.gte=300&page=1${industryParam}`
+      );
       if (res.ok) {
         const data = await res.json();
         const topRated = data.results || [];
@@ -752,4 +780,107 @@ export async function signOutAction() {
 
   await supabase.auth.signOut();
   return { success: true };
+}
+
+// -----------------------------------------------------------------------------
+// NEW: SMART TAG SEARCH
+// -----------------------------------------------------------------------------
+const GENRE_MAP: Record<string, number> = {
+  'action': 28, 'adventure': 12, 'animation': 16, 'comedy': 35, 'crime': 80,
+  'documentary': 99, 'drama': 18, 'family': 10751, 'fantasy': 14, 'history': 36,
+  'horror': 27, 'music': 10402, 'mystery': 9648, 'romance': 10749,
+  'sci-fi': 878, 'science fiction': 878, 'scifi': 878,
+  'tv movie': 10770, 'thriller': 53, 'war': 10752, 'western': 37
+};
+
+export async function getRecommendationsByTag(tag: string, page: number = 1) {
+  checkKey();
+  const cleanTag = tag.toLowerCase().trim();
+
+  // 1. IS IT A GENRE?
+  if (GENRE_MAP[cleanTag] || GENRE_MAP[cleanTag.replace(/s$/, '')]) { // support plurals locally
+    const genreId = GENRE_MAP[cleanTag] || GENRE_MAP[cleanTag.replace(/s$/, '')]; // e.g., "thrillers" -> "thriller"
+    const countryCode = await getCountryCode() || 'US';
+
+    console.log(`🎯 pSEO: Detected Genre "${cleanTag}" (ID: ${genreId}) - Region: ${countryCode}`);
+
+    // REGION/INDUSTRY LOGIC: 
+    let industryParam = '';
+
+    // 1. Try to get User Preferences (if logged in)
+    const cookieStore = await cookies();
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      { cookies: { getAll() { return cookieStore.getAll() } } }
+    );
+    const { data: { session } } = await supabase.auth.getSession();
+
+    if (session?.user) {
+      // Fetch Profile Preferences
+      const { data: profile } = await supabase.from('profiles').select('taste_dna').eq('id', session.user.id).single();
+      const industryIds = profile?.taste_dna?.industries || [];
+      if (industryIds.length > 0) {
+        const countryCodes = getCountryCodesFromIndustries(industryIds);
+        if (countryCodes.length > 0) {
+          industryParam = `&with_origin_country=${countryCodes.join('|')}`;
+        }
+      }
+    }
+
+    // 2. Fallback to "Local + US" if no user prefs
+    if (!industryParam) {
+      if (countryCode !== 'US') {
+        industryParam = `&with_origin_country=${countryCode}|US`;
+      }
+    }
+
+    // Fetch movies
+    const res = await fetch(
+      `${TMDB_BASE_URL}/discover/movie?api_key=${TMDB_KEY}&language=en-US&sort_by=vote_count.desc&with_genres=${genreId}&vote_average.gte=6&page=${page}&region=${countryCode}&with_release_type=2|3${industryParam}`
+    );
+    const data = await res.json();
+    return data.results as TMDBMovie[] || [];
+  }
+
+  // 2. IS IT A SPECIFIC MOVIE? (Movies like Interstellar)
+  // Search for the movie first
+  const searchRes = await fetch(
+    `${TMDB_BASE_URL}/search/movie?api_key=${TMDB_KEY}&language=en-US&query=${encodeURIComponent(cleanTag)}&page=1`
+  );
+  const searchData = await searchRes.json();
+  const firstMatch = searchData.results?.[0];
+
+  // If we found a VERY close match (exact title or very popular)
+  // Only do "Movies Like" logic on Page 1 or if we are paginating recommendation results.
+  // Actually, TMDB recommendations endpoint supports pagination.
+  if (firstMatch) {
+    const isExactMatch = firstMatch.title.toLowerCase() === cleanTag;
+
+    // Let's rely on the recommendation endpoint of the first match
+    // console.log(`🎯 pSEO: Found Seed Movie "${firstMatch.title}" (ID: ${firstMatch.id})`);
+
+    const recRes = await fetch(
+      `${TMDB_BASE_URL}/movie/${firstMatch.id}/recommendations?api_key=${TMDB_KEY}&language=en-US&page=${page}`
+    );
+    const recData = await recRes.json();
+
+    // Return recommendations if exists
+    if (recData.results && recData.results.length > 0) {
+      return recData.results as TMDBMovie[];
+    }
+  }
+
+  // 3. FALLBACK: KEYWORD SEARCH
+  // Keyword search doesn't support "with_origin_country" easily without knowing the keyword ID.
+  // For now, we utilize the 'region' parameter which biases results slightly, 
+  // but if page > 1, we just return search results.
+  console.log(`🎯 pSEO: Fallback to Search for "${cleanTag}" Page ${page}`);
+
+  const searchResFallback = await fetch(
+    `${TMDB_BASE_URL}/search/movie?api_key=${TMDB_KEY}&language=en-US&query=${encodeURIComponent(cleanTag)}&page=${page}`
+  );
+  const searchDataFallback = await searchResFallback.json();
+
+  return searchDataFallback.results as TMDBMovie[] || [];
 }

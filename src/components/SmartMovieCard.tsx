@@ -35,6 +35,7 @@ export default function SmartMovieCard({ movie, userId, isSeen: initialSeen }: P
                         e.stopPropagation(); // Stop bubble
                         setShowSlider(true);
                     }}
+                    suppressHydrationWarning
                 >
                     <Check className="w-5 h-5" />
                 </button>

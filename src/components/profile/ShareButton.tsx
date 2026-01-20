@@ -46,6 +46,7 @@ export default function ShareButton({
     return (
         <button
             onClick={handleShare}
+            suppressHydrationWarning
             className={`
         px-4 py-2 rounded-full font-bold text-sm flex items-center gap-2 transition-all duration-300
         ${copied

@@ -42,6 +42,36 @@ export default function RootLayout({
         {/* Preconnect for TMDB Images (LCP Optimization) */}
         <link rel="preconnect" href="https://image.tmdb.org" />
 
+        {/* JSON-LD for Google Knowledge Graph */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "WebSite",
+              "name": "WatchThisMovie",
+              "url": "https://watchthismovie.online",
+              "potentialAction": {
+                "@type": "SearchAction",
+                "target": "https://watchthismovie.online/search?q={search_term_string}",
+                "query-input": "required name=search_term_string"
+              },
+              "publisher": {
+                "@type": "Organization",
+                "name": "WatchThisMovie",
+                "logo": {
+                  "@type": "ImageObject",
+                  "url": "https://watchthismovie.online/logo-512.png"
+                },
+                "sameAs": [
+                  "https://twitter.com/watchthismovie",
+                  "https://github.com/watchthismovie"
+                ]
+              }
+            })
+          }}
+        />
+
         {/* Google Tag Manager (noscript) */}
         <noscript>
           <iframe
