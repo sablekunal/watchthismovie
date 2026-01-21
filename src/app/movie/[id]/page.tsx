@@ -1,3 +1,4 @@
+import { Metadata } from 'next';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import Image from 'next/image';
@@ -65,6 +66,38 @@ const formatRuntime = (minutes: number) => {
   const m = minutes % 60;
   return `${h}h ${m}m`;
 };
+
+// FIX: Strictly async params handling for Next.js 16
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const { id } = await params;
+  const movie = await getMovieDetails(id) as unknown as MovieDetails;
+
+  if (!movie || !movie.title) {
+    return {
+      title: 'Movie Not Found | WatchThisMovie',
+    }
+  }
+
+  const year = movie.release_date?.split('-')[0] || 'N/A';
+  const description = movie.overview
+    ? `${movie.overview.slice(0, 150)}... Read reviews, watch trailer, and find where to stream ${movie.title}.`
+    : `Watch trailer, cast, and more for ${movie.title} on WatchThisMovie.`;
+
+  return {
+    title: `${movie.title} (${year}) - Reviews & Similar Movies | WatchThisMovie`,
+    description: description,
+    openGraph: {
+      title: `${movie.title} (${year}) - WatchThisMovie`,
+      description: description,
+      images: movie.backdrop_path
+        ? [{ url: `https://image.tmdb.org/t/p/original${movie.backdrop_path}`, width: 1200, height: 630 }]
+        : [],
+    },
+    alternates: {
+      canonical: `https://watchthismovie.online/movie/${id}`,
+    }
+  }
+}
 
 // FIX: Strictly async params handling for Next.js 16
 export default async function MovieDetailsPage({
