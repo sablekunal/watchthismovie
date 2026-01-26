@@ -19,6 +19,9 @@ export const metadata: Metadata = {
     google: 'V1txDMkKDMg-_zL3D8fmW5SYM-ftq2O85qfTWLT-5ho',
   },
   metadataBase: new URL('https://watchthismovie.online'),
+  alternates: {
+    canonical: './',
+  },
 };
 
 export const viewport = {
