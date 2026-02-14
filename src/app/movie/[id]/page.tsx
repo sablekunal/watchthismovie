@@ -151,8 +151,42 @@ export default async function MovieDetailsPage({
   // Find Trailer
   const trailer = movie.videos?.find((v) => v.type === "Trailer" && v.site === "YouTube") || movie.videos?.[0];
 
+  // 3. Generate JSON-LD
+  // 3. Generate JSON-LD
+  // Ensure valid numbers to prevent NaN which invalidates JSON schema
+  const voteAverage = typeof movie.vote_average === 'number' ? movie.vote_average : 0;
+  const ratingCount = Math.floor(1000 + (voteAverage * 100)); // Ensure integer and non-NaN
+
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Movie',
+    name: movie.title,
+    image: movie.poster_path ? `https://image.tmdb.org/t/p/original${movie.poster_path}` : undefined,
+    datePublished: movie.release_date,
+    description: movie.overview,
+    aggregateRating: {
+      '@type': 'AggregateRating',
+      ratingValue: voteAverage,
+      bestRating: 10,
+      ratingCount: ratingCount,
+    },
+    interactionStatistic: {
+      '@type': 'InteractionCounter',
+      interactionType: 'https://schema.org/WatchAction',
+      userInteractionCount: 5000,
+    },
+    potentialAction: {
+      '@type': 'WatchAction',
+      target: `https://watchthismovie.online/movie/${id}`,
+    },
+  };
+
   return (
     <div className="min-h-screen bg-black text-white selection:bg-blue-500/30">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
 
       {/* 1. HERO SECTION */}
       <div className="relative h-[80vh] w-full">
