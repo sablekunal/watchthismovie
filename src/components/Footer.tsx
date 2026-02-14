@@ -5,7 +5,7 @@ import Image from 'next/image'; // <--- Import Image
 export default function Footer() {
   return (
     <footer className="w-full bg-black border-t border-white/10 pt-16 pb-8">
-      <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
+      <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-12 mb-12">
 
         {/* Brand Column */}
         <div className="space-y-4">
@@ -26,8 +26,6 @@ export default function Footer() {
           </p>
         </div>
 
-        {/* ... (Keep the rest of your links exactly the same) ... */}
-
         {/* Links Column 1 */}
         <div>
           <h3 className="font-bold text-white mb-4">Product</h3>
@@ -44,6 +42,17 @@ export default function Footer() {
             <li><Link href="/about" className="hover:text-blue-400">About Us</Link></li>
             <li><Link href="/privacy" className="hover:text-blue-400">Privacy Policy</Link></li>
             <li><Link href="/terms" className="hover:text-blue-400">Terms of Service</Link></li>
+          </ul>
+        </div>
+
+        {/* Moods Column (SEO) */}
+        <div>
+          <h3 className="font-bold text-white mb-4">Browse by Mood</h3>
+          <ul className="space-y-2 text-sm text-gray-400">
+            <li><Link href="/collections/sad-movies-for-engineers" className="hover:text-purple-400">Sad Movies for Engineers</Link></li>
+            <li><Link href="/collections/mind-bending-thrillers-1990s" className="hover:text-purple-400">Mind-Bending 90s</Link></li>
+            <li><Link href="/collections/romantic-comedies-for-designers" className="hover:text-purple-400">Rom-Coms for Designers</Link></li>
+            <li><Link href="/collections/scary-movies-for-students" className="hover:text-purple-400">Scary Movies for Students</Link></li>
           </ul>
         </div>
 
