@@ -79,7 +79,7 @@ export default function Navigation() {
     });
 
     return () => subscription.unsubscribe();
-  }, [supabase]);
+  }, []);
 
   // 2. Scroll & Click Outside
   useEffect(() => {

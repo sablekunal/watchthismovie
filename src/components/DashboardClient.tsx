@@ -33,7 +33,7 @@ export default function DashboardClient({ initialMovies, initialRatingCount }: D
       }
     };
     checkUser();
-  }, [router, supabase]);
+  }, [router]);
 
   const handleSearchSelect = (selectedMovie: Movie) => {
     setMovies((prev) => [selectedMovie, ...prev.slice(currentIndex)]);

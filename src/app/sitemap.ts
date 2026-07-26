@@ -28,13 +28,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   if (TMDB_KEY) {
     try {
-      console.log("🗺️ Sitemap: Fetching 600 movies from TMDB...");
+      console.log("🗺️ Sitemap: Fetching popular movies from TMDB...");
 
-      // Batch requests to maximize speed without hitting rate limits too hard
-      // 3 Batches of 10 requests
       const fetchBatch = async (pages: number[]) => {
         const promises = pages.map(page =>
-          fetch(`${TMDB_BASE_URL}/movie/popular?api_key=${TMDB_KEY}&language=en-US&page=${page}`, { next: { revalidate: 3600 } })
+          fetch(`${TMDB_BASE_URL}/movie/popular?api_key=${TMDB_KEY}&language=en-US&page=${page}`, { next: { revalidate: 86400 } })
             .then(res => {
               if (!res.ok) throw new Error(`Failed page ${page}`);
               return res.json();
@@ -47,12 +45,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         return Promise.all(promises);
       };
 
-      const batch1 = await fetchBatch(Array.from({ length: 10 }, (_, i) => i + 1)); // Pages 1-10
-      const batch2 = await fetchBatch(Array.from({ length: 10 }, (_, i) => i + 11)); // Pages 11-20
-      const batch3 = await fetchBatch(Array.from({ length: 10 }, (_, i) => i + 21)); // Pages 21-30
-
-      const allResults = [...batch1, ...batch2, ...batch3];
-      const allMovies = allResults.flatMap(data => data.results || []);
+      const batch = await fetchBatch([1, 2, 3, 4, 5]); // Top 100 movies
+      const allMovies = batch.flatMap(data => data.results || []);
 
       // Deduplicate movies just in case
       const seenIds = new Set();

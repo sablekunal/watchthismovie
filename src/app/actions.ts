@@ -148,7 +148,7 @@ export async function fetchInitialBatch(userId: string) {
       try {
         const res = await fetch(url, {
           headers: { 'Accept': 'application/json', 'User-Agent': 'WatchThisMovie/1.0' },
-          next: { revalidate: 0 } // Cache Disabled for Freshness
+          next: { revalidate: 3600 } // Cache for 1 hour
         });
         if (!res.ok) throw new Error(`Status ${res.status}`);
         return await res.json();
